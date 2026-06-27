@@ -1,3 +1,14 @@
 {
-  "version": 2
+  "version": 2,
+  "framework": null,
+  "outputDirectory": ".",
+  "builds": [
+    { "src": "api/videos.js", "use": "@vercel/node" }
+  ],
+  "routes": [
+    { "src": "/api/videos", "dest": "/api/videos.js" },
+    { "src": "/style.css", "dest": "/style.css" },
+    { "src": "/script.js", "dest": "/script.js" },
+    { "src": "/(.*)", "dest": "/index.html" }
+  ]
 }
