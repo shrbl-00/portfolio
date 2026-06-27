@@ -347,14 +347,23 @@ body.cursor--play .cursor-follower {
   border: 1px solid rgba(255,255,255,.12);
 }
 
-/* Canvas thumbnail — shown by default */
-.video-frame canvas {
+/* Cloudinary thumbnail image — shown by default */
+.video-frame img {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+/* Hatched fallback when thumbnail fails to load */
+.video-frame.thumb-error {
+  background: repeating-linear-gradient(
+    45deg,
+    #0d0d0d 0px, #0d0d0d 10px,
+    #111 10px, #111 20px
+  );
 }
 
 /* Actual video element — hidden until hover */
@@ -369,8 +378,8 @@ body.cursor--play .cursor-follower {
   transition: opacity .3s ease;
 }
 
-.video-frame.is-playing video  { opacity: 1; }
-.video-frame.is-playing canvas { opacity: 0; }
+.video-frame.is-playing video { opacity: 1; }
+.video-frame.is-playing img   { opacity: 0; }
 
 /* Category tag */
 .cat-tag {

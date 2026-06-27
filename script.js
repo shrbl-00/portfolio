@@ -67,120 +67,6 @@ function runIntro() {
 }
 
 
-/* ============================================================
-   THUMBNAIL GENERATION
-   Uses a dedicated hidden <video> per thumbnail so that hover
-   interactions on the card's playback video never interfere
-   with the seek/draw sequence.
-============================================================ */
-
-// Serial queue — one thumbnail rendered at a time to keep memory sane
-const thumbQueue  = [];
-let   thumbActive = false;
-
-function queueThumbnail(src, canvas) {
-  thumbQueue.push({ src, canvas });
-  if (!thumbActive) drainQueue();
-}
-
-function drainQueue() {
-  if (!thumbQueue.length) { thumbActive = false; return; }
-  thumbActive = true;
-  const { src, canvas } = thumbQueue.shift();
-  renderThumbnail(src, canvas).then(drainQueue);
-}
-
-function renderThumbnail(src, canvas) {
-  return new Promise((resolve) => {
-    const v = document.createElement('video');
-    v.muted       = true;
-    v.playsInline = true;
-    v.preload     = 'auto';
-    v.src         = src;
-    // Must be in the DOM for some browsers to begin loading
-    v.style.cssText = 'position:fixed;opacity:0;pointer-events:none;width:1px;height:1px;top:-9999px';
-    document.body.appendChild(v);
-
-    let settled = false;
-    const done = (drew) => {
-      if (settled) return;
-      settled = true;
-      if (!drew) drawFallback(canvas);
-      v.pause();
-      v.src = '';
-      v.remove();
-      resolve();
-    };
-
-    // Catch codec / network errors early
-    v.addEventListener('error', () => {
-      console.warn('Thumbnail load error for', src, v.error?.code, v.error?.message);
-      done(false);
-    });
-
-    const captureFrame = () => {
-      if (!v.videoWidth || !v.videoHeight) { done(false); return; }
-
-      canvas.width  = v.videoWidth;
-      canvas.height = v.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(v, 0, 0);
-
-      // Sample center pixel — if black, the frame didn't decode yet
-      const mid = ctx.getImageData(canvas.width >> 1, canvas.height >> 1, 1, 1).data;
-      if (mid[0] + mid[1] + mid[2] > 12) {
-        done(true); // real frame captured
-      } else {
-        // Try the 1-second mark as a last resort before giving up
-        v.currentTime = 1;
-        v.addEventListener('seeked', () => {
-          requestAnimationFrame(() => {
-            ctx.drawImage(v, 0, 0);
-            done(true); // take whatever we have
-          });
-        }, { once: true });
-      }
-    };
-
-    const seekRandom = () => {
-      const dur = v.duration;
-      const t   = (dur && isFinite(dur) && dur > 1)
-                  ? dur * (0.1 + Math.random() * 0.8)
-                  : 0.5;
-      v.currentTime = t;
-      // requestAnimationFrame after seeked ensures the frame is painted
-      v.addEventListener('seeked', () => requestAnimationFrame(captureFrame), { once: true });
-    };
-
-    if (v.readyState >= 2) {        // HAVE_CURRENT_DATA — can seek immediately
-      seekRandom();
-    } else {
-      v.addEventListener('loadeddata', () => seekRandom(), { once: true });
-    }
-
-    // Absolute timeout — never leave a black box
-    setTimeout(() => done(false), 10000);
-
-    v.load();
-  });
-}
-
-// Fallback canvas — subtle hatched texture, visually distinct from black
-function drawFallback(canvas) {
-  canvas.width  = 320;
-  canvas.height = 180;
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#0d0d0d';
-  ctx.fillRect(0, 0, 320, 180);
-  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-  ctx.lineWidth = 1;
-  for (let x = -180; x < 320; x += 18) {
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x + 180, 180);
-    ctx.stroke();
-  }
-}
 
 
 /* ============================================================
@@ -260,9 +146,12 @@ function createVideoCard(videoData) {
   const frame = document.createElement('div');
   frame.className = 'video-frame';
 
-  const canvas = document.createElement('canvas');
+  const thumb = document.createElement('img');
+  thumb.src   = videoData.thumbnail;
+  thumb.alt   = '';
+  thumb.addEventListener('error', () => frame.classList.add('thumb-error'));
 
-  // Playback video — completely independent of thumbnail generation
+  // Playback video — loads only on hover
   const video = document.createElement('video');
   video.src        = videoData.path;
   video.muted      = true;
@@ -282,12 +171,9 @@ function createVideoCard(videoData) {
   hint.className   = 'sound-hint';
   hint.textContent = 'TAP FOR SOUND';
 
-  frame.append(canvas, video, tag, hint);
+  frame.append(thumb, video, tag, hint);
 
   card.append(frame);
-
-  // Queue thumbnail (uses its own isolated video element)
-  queueThumbnail(videoData.path, canvas);
 
   // Cursor
   frame.addEventListener('mouseenter', () => setCursorState('play'));

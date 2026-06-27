@@ -28,6 +28,13 @@ function cleanTitle(displayName) {
     .trim();
 }
 
+function makeThumbnail(secureUrl) {
+  return secureUrl
+    .replace('/video/upload/', '/video/upload/so_20p/fl_screenshot/')
+    .replace(/\/v\d+\//, '/')
+    .replace(/\.[^/.]+$/, '.jpg');
+}
+
 module.exports = async (req, res) => {
   const auth    = Buffer.from(`${API_KEY}:${API_SECRET}`).toString('base64');
   const results = [];
@@ -51,10 +58,11 @@ module.exports = async (req, res) => {
         if (!category) continue;
 
         results.push({
-          path:     r.secure_url,
-          title:    cleanTitle(r.display_name || r.public_id.split('/').pop()),
+          path:      r.secure_url,
+          thumbnail: makeThumbnail(r.secure_url),
+          title:     cleanTitle(r.display_name || r.public_id.split('/').pop()),
           category,
-          folder:   (r.asset_folder || '').split('/').pop(),
+          folder:    (r.asset_folder || '').split('/').pop(),
         });
       }
 

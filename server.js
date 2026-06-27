@@ -38,6 +38,14 @@ function cleanTitle(displayName) {
     .trim();
 }
 
+// Build a Cloudinary screenshot URL — grab frame at 20% into the video
+function makeThumbnail(secureUrl) {
+  return secureUrl
+    .replace('/video/upload/', '/video/upload/so_20p/fl_screenshot/')
+    .replace(/\/v\d+\//, '/')
+    .replace(/\.[^/.]+$/, '.jpg');
+}
+
 // Fetch all video resources from Cloudinary, following pagination cursors
 function cloudinaryFetchAll() {
   return new Promise(async (resolve, reject) => {
@@ -63,10 +71,11 @@ function cloudinaryFetchAll() {
           if (!category) continue;
 
           results.push({
-            path:     r.secure_url,
-            title:    cleanTitle(r.display_name || r.public_id.split('/').pop()),
+            path:      r.secure_url,
+            thumbnail: makeThumbnail(r.secure_url),
+            title:     cleanTitle(r.display_name || r.public_id.split('/').pop()),
             category,
-            folder:   (r.asset_folder || '').split('/').pop(),
+            folder:    (r.asset_folder || '').split('/').pop(),
           });
         }
 
