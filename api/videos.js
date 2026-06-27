@@ -1,53 +1,72 @@
-const fs   = require('fs');
-const path = require('path');
+const https = require('https');
 
-const FOLDER_TO_CATEGORY = {
-  'shortform':      'Short Form',
-  'short form':     'Short Form',
+const CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME;
+const API_KEY    = process.env.CLOUDINARY_API_KEY;
+const API_SECRET = process.env.CLOUDINARY_API_SECRET;
+
+const SEGMENT_TO_CATEGORY = {
+  'edits':          'Editing',
+  'editing':        'Editing',
   'motion graphic': 'Motion Graphics',
   'motion graphics':'Motion Graphics',
-  'editing':        'Editing',
-  'edits':          'Editing',
   'music videos':   'Music Videos',
   'music video':    'Music Videos',
+  'shortform':      'Short Form',
+  'short form':     'Short Form',
 };
 
-const VIDEO_EXTS = new Set(['.mp4', '.mov', '.webm', '.m4v', '.mkv']);
+function categoryFromAssetFolder(assetFolder) {
+  if (!assetFolder) return null;
+  const segment = assetFolder.toLowerCase().split('/').pop();
+  return SEGMENT_TO_CATEGORY[segment] || null;
+}
 
-module.exports = (req, res) => {
-  // Try both casings — macOS is case-insensitive, Linux (Vercel) is not
-  const videosDir = fs.existsSync(path.join(process.cwd(), 'Videos'))
-    ? path.join(process.cwd(), 'Videos')
-    : path.join(process.cwd(), 'videos');
+function cleanTitle(displayName) {
+  return displayName
+    .replace(/_[a-z0-9]{6}$/, '')
+    .replace(/[_-]+/g, ' ')
+    .trim();
+}
 
-  const result = [];
+module.exports = async (req, res) => {
+  const auth    = Buffer.from(`${API_KEY}:${API_SECRET}`).toString('base64');
+  const results = [];
+  let cursor    = null;
 
-  if (!fs.existsSync(videosDir)) {
-    res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify(result));
-    return;
-  }
+  try {
+    do {
+      const qs  = `max_results=100&type=upload${cursor ? '&next_cursor=' + cursor : ''}`;
+      const url = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/resources/video?${qs}`;
 
-  for (const folder of fs.readdirSync(videosDir)) {
-    const folderPath = path.join(videosDir, folder);
-    if (!fs.statSync(folderPath).isDirectory()) continue;
-
-    const category = FOLDER_TO_CATEGORY[folder.toLowerCase()] || folder;
-
-    for (const file of fs.readdirSync(folderPath)) {
-      const ext = path.extname(file).toLowerCase();
-      if (!VIDEO_EXTS.has(ext)) continue;
-
-      result.push({
-        path: '/videos/' + encodeURIComponent(folder) + '/' + encodeURIComponent(file),
-        title: path.basename(file, ext).trim(),
-        category,
-        folder,
+      const data = await new Promise((resolve, reject) => {
+        https.get(url, { headers: { Authorization: `Basic ${auth}` } }, (r) => {
+          let body = '';
+          r.on('data', c => body += c);
+          r.on('end', () => { try { resolve(JSON.parse(body)); } catch (e) { reject(e); } });
+        }).on('error', reject);
       });
-    }
-  }
 
-  res.setHeader('Content-Type', 'application/json');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.end(JSON.stringify(result));
+      for (const r of (data.resources || [])) {
+        const category = categoryFromAssetFolder(r.asset_folder);
+        if (!category) continue;
+
+        results.push({
+          path:     r.secure_url,
+          title:    cleanTitle(r.display_name || r.public_id.split('/').pop()),
+          category,
+          folder:   (r.asset_folder || '').split('/').pop(),
+        });
+      }
+
+      cursor = data.next_cursor || null;
+    } while (cursor);
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.end(JSON.stringify(results));
+  } catch (err) {
+    res.statusCode = 500;
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ error: err.message }));
+  }
 };
