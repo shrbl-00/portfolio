@@ -1,6 +1,3 @@
 {
-  "version": 2,
-  "rewrites": [
-    { "source": "/api/videos", "destination": "/api/videos" }
-  ]
+  "version": 2
 }
