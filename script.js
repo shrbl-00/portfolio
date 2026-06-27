@@ -1,4 +1,21 @@
 /* ============================================================
+   HAMBURGER MENU
+============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  const nav       = document.querySelector('.nav');
+  const hamburger = document.querySelector('.nav__hamburger');
+  if (!hamburger) return;
+
+  hamburger.addEventListener('click', () => nav.classList.toggle('is-open'));
+
+  // Close menu when a link is tapped
+  document.querySelectorAll('.nav__link').forEach(link => {
+    link.addEventListener('click', () => nav.classList.remove('is-open'));
+  });
+});
+
+
+/* ============================================================
    CUSTOM CURSOR
 ============================================================ */
 const cursor       = document.getElementById('cursor');
