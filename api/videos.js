@@ -1,30 +1,24 @@
-try { require('../env-load'); } catch (_) {}
+const cloudinary = require('cloudinary').v2;
 
-const https = require('https');
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key:    process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
-const CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME;
-const API_KEY    = process.env.CLOUDINARY_API_KEY;
-const API_SECRET = process.env.CLOUDINARY_API_SECRET;
-
-const SEGMENT_TO_CATEGORY = {
-  'edits':          'Editing',
-  'editing':        'Editing',
-  'motion graphic': 'Motion Graphics',
-  'motion graphics':'Motion Graphics',
-  'music videos':   'Music Videos',
-  'music video':    'Music Videos',
-  'shortform':      'Short Form',
-  'short form':     'Short Form',
+const FOLDER_TO_CATEGORY = {
+  'motion graphic':  'Motion Graphics',
+  'motion graphics': 'Motion Graphics',
+  'editing':         'Editing',
+  'edits':           'Editing',
+  'music videos':    'Music Videos',
+  'music video':     'Music Videos',
+  'shortform':       'Short Form',
+  'short form':      'Short Form',
 };
 
-function categoryFromAssetFolder(assetFolder) {
-  if (!assetFolder) return null;
-  const segment = assetFolder.toLowerCase().split('/').pop();
-  return SEGMENT_TO_CATEGORY[segment] || null;
-}
-
 function cleanTitle(displayName) {
-  return displayName
+  return (displayName || '')
     .replace(/_[a-z0-9]{6}$/, '')
     .replace(/[_-]+/g, ' ')
     .trim();
@@ -37,46 +31,33 @@ function makeThumbnail(secureUrl) {
     .replace(/\.[^/.]+$/, '.jpg');
 }
 
-module.exports = async (req, res) => {
-  const auth    = Buffer.from(`${API_KEY}:${API_SECRET}`).toString('base64');
-  const results = [];
-  let cursor    = null;
-
+module.exports = async function handler(req, res) {
   try {
-    do {
-      const qs  = `max_results=100&type=upload${cursor ? '&next_cursor=' + cursor : ''}`;
-      const url = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/resources/video?${qs}`;
+    const result = await cloudinary.api.resources({
+      type:          'upload',
+      resource_type: 'video',
+      max_results:   100,
+    });
 
-      const data = await new Promise((resolve, reject) => {
-        https.get(url, { headers: { Authorization: `Basic ${auth}` } }, (r) => {
-          let body = '';
-          r.on('data', c => body += c);
-          r.on('end', () => { try { resolve(JSON.parse(body)); } catch (e) { reject(e); } });
-        }).on('error', reject);
-      });
+    const videos = result.resources.map(r => {
+      // asset_folder holds the organised path (e.g. "Portffolio/edits")
+      // take only the last segment for category lookup
+      const folderPath = r.asset_folder || r.folder || '';
+      const segment    = folderPath.toLowerCase().split('/').pop();
+      const category   = FOLDER_TO_CATEGORY[segment] || segment;
 
-      for (const r of (data.resources || [])) {
-        const category = categoryFromAssetFolder(r.asset_folder);
-        if (!category) continue;
+      return {
+        path:      r.secure_url,
+        thumbnail: makeThumbnail(r.secure_url),
+        title:     cleanTitle(r.display_name || r.public_id.split('/').pop()),
+        category,
+        folder:    segment,
+      };
+    }).filter(v => v.category);
 
-        results.push({
-          path:      r.secure_url,
-          thumbnail: makeThumbnail(r.secure_url),
-          title:     cleanTitle(r.display_name || r.public_id.split('/').pop()),
-          category,
-          folder:    (r.asset_folder || '').split('/').pop(),
-        });
-      }
-
-      cursor = data.next_cursor || null;
-    } while (cursor);
-
-    res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.end(JSON.stringify(results));
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.status(200).json(videos);
   } catch (err) {
-    res.statusCode = 500;
-    res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ error: err.message }));
+    res.status(500).json({ error: err.message });
   }
 };

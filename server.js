@@ -1,4 +1,4 @@
-// Local dev server — wraps the Vercel serverless handler in a plain HTTP server
+// Local development server — not used by Vercel
 try { require('./env-load'); } catch (_) {}
 
 const http    = require('http');
@@ -22,17 +22,27 @@ const MIME = {
   '.woff': 'font/woff',
 };
 
+// Minimal shim so the handler can call res.status().json()
+function shimRes(res) {
+  res.status = (code) => { res.statusCode = code; return res; };
+  res.json   = (data) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify(data));
+  };
+  return res;
+}
+
 http.createServer((req, res) => {
   const pathname = new URL(req.url, `http://localhost:${PORT}`).pathname;
 
-  if (pathname === '/api/videos') return handler(req, res);
+  if (pathname === '/api/videos') return handler(req, shimRes(res));
 
   let filePath = path.join(ROOT, decodeURIComponent(pathname));
   if (pathname === '/' || pathname === '') filePath = path.join(ROOT, 'index.html');
 
   fs.stat(filePath, (err, stat) => {
     if (err || !stat.isFile()) { res.writeHead(404); res.end('Not found'); return; }
-    const ext  = path.extname(filePath).toLowerCase();
+    const ext = path.extname(filePath).toLowerCase();
     res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream', 'Content-Length': stat.size });
     fs.createReadStream(filePath).pipe(res);
   });
