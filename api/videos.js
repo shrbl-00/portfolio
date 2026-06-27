@@ -30,7 +30,7 @@ function cleanTitle(displayName) {
 
 function makeThumbnail(secureUrl) {
   return secureUrl
-    .replace('/video/upload/', '/video/upload/so_20p/fl_screenshot/')
+    .replace('/video/upload/', '/video/upload/f_jpg,so_20p/')
     .replace(/\/v\d+\//, '/')
     .replace(/\.[^/.]+$/, '.jpg');
 }

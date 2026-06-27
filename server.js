@@ -38,10 +38,10 @@ function cleanTitle(displayName) {
     .trim();
 }
 
-// Build a Cloudinary screenshot URL — grab frame at 20% into the video
+// Build a Cloudinary thumbnail URL — f_jpg converts to JPEG, so_20p seeks to 20%
 function makeThumbnail(secureUrl) {
   return secureUrl
-    .replace('/video/upload/', '/video/upload/so_20p/fl_screenshot/')
+    .replace('/video/upload/', '/video/upload/f_jpg,so_20p/')
     .replace(/\/v\d+\//, '/')
     .replace(/\.[^/.]+$/, '.jpg');
 }
