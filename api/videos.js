@@ -1,3 +1,5 @@
+try { require('../env-load'); } catch (_) {}
+
 const https = require('https');
 
 const CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME;

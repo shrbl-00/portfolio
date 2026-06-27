@@ -4,7 +4,7 @@ try { require('./env-load'); } catch (_) {}
 const http    = require('http');
 const fs      = require('fs');
 const path    = require('path');
-const handler = require('./server');
+const handler = require('./api/videos');
 
 const PORT = 3000;
 const ROOT = __dirname;
