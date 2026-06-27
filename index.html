@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Charbel Antoun</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- BACKGROUND AMBIENCE VIDEO -->
+  <video id="bg-video" muted loop playsinline preload="none" aria-hidden="true"></video>
+
+  <!-- CUSTOM CURSOR -->
+  <div id="cursor" class="cursor"></div>
+  <div id="cursor-follower" class="cursor-follower"></div>
+
+  <!-- FULLSCREEN VIDEO MODAL -->
+  <div id="video-modal" class="modal" aria-hidden="true">
+    <button id="modal-close" class="modal__close" aria-label="Close">&#x2715;</button>
+    <div class="modal__inner">
+      <video id="modal-video" class="modal__video" controls></video>
+      <p id="modal-title" class="modal__title"></p>
+    </div>
+  </div>
+
+  <!-- INTRO OVERLAY -->
+  <div id="intro" class="intro">
+    <div id="intro-name" class="intro-name">
+      <span class="intro-word">
+        <span>C</span><span>H</span><span>A</span><span>R</span><span>B</span><span>E</span><span>L</span>
+      </span>
+      <span class="intro-space">&nbsp;</span>
+      <span class="intro-word">
+        <span>A</span><span>N</span><span>T</span><span>O</span><span>U</span><span>N</span>
+      </span>
+    </div>
+  </div>
+
+  <!-- MAIN SITE -->
+  <div id="site" class="site site--hidden">
+
+    <!-- NAV -->
+    <nav class="nav" data-reveal>
+      <div class="nav__logo">CA</div>
+      <ul class="nav__links">
+        <li><a href="#work"    class="nav__link">Work</a></li>
+        <li><a href="#contact" class="nav__link">Contact</a></li>
+      </ul>
+    </nav>
+
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero__left" data-reveal>
+        <h1 class="hero__name">Charbel<br>Antoun</h1>
+        <p class="hero__subtitle">Video Editor · Short Form · Motion Graphics</p>
+      </div>
+      <!-- Hero video grid — first 4 videos injected by JS -->
+      <div class="hero__grid" id="hero-grid" data-reveal></div>
+    </section>
+
+    <!-- WORK -->
+    <section class="work" id="work">
+      <div class="work__header">
+        <span class="section-label" data-scroll-slide>Work</span>
+        <div class="work__filters" id="work-filters" data-scroll-fade>
+          <button class="filter-tab is-active" data-filter="all">All</button>
+          <button class="filter-tab" data-filter="Short Form">Short Form</button>
+          <button class="filter-tab" data-filter="Motion Graphics">Motion Graphics</button>
+          <button class="filter-tab" data-filter="Editing">Editing</button>
+          <button class="filter-tab" data-filter="Music Videos">Music Videos</button>
+        </div>
+      </div>
+      <div class="work__grid" id="work-grid"></div>
+    </section>
+
+    <!-- CONTACT -->
+    <section class="contact" id="contact">
+      <div class="contact__inner">
+        <h2 class="contact__heading" data-scroll-slide>Let's work.</h2>
+        <div class="contact__links" data-scroll-fade>
+          <a href="mailto:shbvvell@gmail.com" class="contact__link">shbvvell@gmail.com</a>
+          <a href="https://www.instagram.com/sai3in/" target="_blank" class="contact__link contact__link--icon" aria-label="Instagram">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="28" height="28">
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+              <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+    </section>
+
+  </div><!-- /site -->
+
+  <script src="script.js"></script>
+</body>
+</html>
